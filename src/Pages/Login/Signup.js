@@ -1,81 +1,116 @@
 import React, { useContext } from 'react'
 import toast from 'react-hot-toast'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+
+import { Link } from 'react-router-dom'
 import PrimaryButton from '../../Components/Button/PrimaryButton'
-import SmallSpinner from '../../Components/Spinner/SmallSpinner'
 import { AuthContext } from '../../contexts/AuthProvider'
 
-const Login = () => {
-  const { signin, signInWithGoogle, resetPassword,
-    loading,
-    setLoading, } = useContext(AuthContext);
-  const navigate = useNavigate();
-  const location = useLocation();
-  const from=location.state?.from?.pathname||'/'
+const Signup = () => {
+  const { createUser, updateUserProfile, verifyEmail,signInWithGoogle } = useContext(AuthContext);
   const handleSubmit = event => {
-    event.preventDefault()
+    event.preventDefault();
     const form = event.target;
+    const name = form.name.value;
     const email = form.email.value;
+    const image = form.image.files[0];
     const password = form.password.value;
-    console.log(email,password);
-    signin(email, password)
-      .then(result => {
-        const user = result.user;
-        console.log(user);
-      
-        form.reset();
-        navigate(from,{replace:true})
+    console.log(name, 'img', image, 'password', password);
+    const formData = new FormData();
+    formData.append('image', image)
+    //9f37c59aee0d043b16ae697f3841385d
+    const url="https://api.imgbb.com/1/upload?key=2f0ec6c7ea5faefb68c3973a8597fe7c"
+   console.log(url);
+    fetch(url, {
+      method: "POST",  
+      body:formData,
+    })
+      .then(res => res.json())
+      .then(data => {
+       
+        console.log(data.data.display_url)
+        createUser(email, password)
+        .then(result => {
+          updateUserProfile(name, data.data.display_url)
+            .then((
+              verifyEmail()
+                .then(() => {
+                  toast.success('Please Check Your email for verification link')
+                })
+                .catch(error => console.log('verification error from signUp page',error))
+            ))
+          form.reset();
+        }).catch(error => console.log('error from sign Up Page',error))
+        
+      }).catch(error=>console.log('imgUpload error from sign Up',error))
+    
 
-      })
-      .catch(error => {
-        console.log('Login error from Login page', error)
-        const errorMessage = error.message;
-        toast.error(errorMessage);
-        setLoading(false)
-      })
-
-  }
+    }
+   
   const handleGoogleSignIn = () => {
     signInWithGoogle()
       .then(result => {
         const user = result.user;
         console.log(user)
       })
-      .catch(error => console.log('you try google login from login page',error))
+    .catch(error=>console.log('google signIn error form signUp page',error))
   }
   return (
     <div className='flex justify-center items-center pt-8'>
       <div className='flex flex-col max-w-md p-6 rounded-md sm:p-10 bg-gray-100 text-gray-900'>
         <div className='mb-8 text-center'>
-          <h1 className='my-3 text-4xl font-bold'>Sign in</h1>
-          <p className='text-sm text-gray-400'>
-            Sign in to access your account
-          </p>
+          <h1 className='my-3 text-4xl font-bold'>Signup</h1>
+          <p className='text-sm text-gray-400'>Create a new account</p>
         </div>
         <form
           onSubmit={handleSubmit}
           noValidate=''
           action=''
-          className='space-y-6 ng-untouched ng-pristine ng-valid'
+          className='space-y-12 ng-untouched ng-pristine ng-valid'
         >
           <div className='space-y-4'>
+            <div>
+              <label htmlFor='email' className='block mb-2 text-sm'>
+                Name
+              </label>
+              <input
+                type='text'
+                name='name'
+                id='name'
+                required
+                placeholder='Enter Your Name Here'
+                className='w-full px-3 py-2 border rounded-md border-gray-300 focus:outline-green-500 bg-gray-200 text-gray-900'
+                data-temp-mail-org='0'
+              />
+            </div>
+            <div>
+              <label htmlFor='image' className='block mb-2 text-sm'>
+                Select Image:
+              </label>
+              <input
+                type='file'
+                id='image'
+                name='image'
+                accept='image/*'
+                required
+              />
+            </div>
             <div>
               <label htmlFor='email' className='block mb-2 text-sm'>
                 Email address
               </label>
               <input
+                required
                 type='email'
                 name='email'
                 id='email'
-                required
                 placeholder='Enter Your Email Here'
                 className='w-full px-3 py-2 border rounded-md border-gray-300 focus:outline-green-500 bg-gray-200 text-gray-900'
                 data-temp-mail-org='0'
               />
             </div>
             <div>
-              <div className='flex justify-between'>
-                <label htmlFor='password' className='text-sm mb-2'>
+              <div className='flex justify-between mb-2'>
+                <label htmlFor='password' className='text-sm'>
                   Password
                 </label>
               </div>
@@ -85,29 +120,25 @@ const Login = () => {
                 id='password'
                 required
                 placeholder='*******'
-                className='w-full px-3 py-2 border rounded-md border-gray-300 focus:outline-green-500 bg-gray-200 text-gray-900'
+                className='w-full px-3 py-2 border rounded-md border-gray-300 bg-gray-200 focus:outline-green-500 text-gray-900'
               />
             </div>
           </div>
-
-          <div>
-            <PrimaryButton
-              type='submit'
-              classes='w-full px-8 py-3 font-semibold rounded-md bg-gray-900 hover:bg-gray-700 hover:text-white text-gray-100'
-            >
-         {loading ? <SmallSpinner></SmallSpinner>:'Sign in'}
-            </PrimaryButton>
+          <div className='space-y-2'>
+            <div>
+              <PrimaryButton
+                type='submit'
+                classes='w-full px-8 py-3 font-semibold rounded-md bg-gray-900 hover:bg-gray-700 hover:text-white text-gray-100'
+              >
+                Sign up
+              </PrimaryButton>
+            </div>
           </div>
         </form>
-        <div className='space-y-1'>
-          <button className='text-xs hover:underline text-gray-400'>
-            Forgot password?
-          </button>
-        </div>
         <div className='flex items-center pt-4 space-x-1'>
           <div className='flex-1 h-px sm:w-16 dark:bg-gray-700'></div>
           <p className='px-3 text-sm dark:text-gray-400'>
-            Login with social accounts
+            Signup with social accounts
           </p>
           <div className='flex-1 h-px sm:w-16 dark:bg-gray-700'></div>
         </div>
@@ -141,9 +172,9 @@ const Login = () => {
           </button>
         </div>
         <p className='px-6 text-sm text-center text-gray-400'>
-          Don't have an account yet?{' '}
-          <Link to='/signup' className='hover:underline text-gray-600'>
-            Sign up
+          Already have an account yet?{' '}
+          <Link to='/login' className='hover:underline text-gray-600'>
+            Sign In
           </Link>
           .
         </p>
@@ -152,4 +183,4 @@ const Login = () => {
   )
 }
 
-export default Login
+export default Signup
